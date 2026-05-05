@@ -111,37 +111,49 @@ async function runTests() {
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 10: LeetCode parameter
+  // Test 10: Aurora theme
+  await test('Aurora theme works', async () => {
+    const res = await fetch('/api/profile?username=octocat&theme=aurora');
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+  });
+
+  // Test 11: Midnight Sunset theme
+  await test('Midnight Sunset theme works', async () => {
+    const res = await fetch('/api/profile?username=octocat&theme=midnight-sunset');
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+  });
+
+  // Test 12: LeetCode parameter
   await test('LeetCode parameter works', async () => {
     const res = await fetch('/api/profile?username=octocat&leetcode=uwi');
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 11: LeetCode disabled
+  // Test 13: LeetCode disabled
   await test('LeetCode=false works', async () => {
     const res = await fetch('/api/profile?username=octocat&leetcode=false');
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 12: Left alignment
+  // Test 14: Left alignment
   await test('Left alignment works', async () => {
     const res = await fetch('/api/profile?username=octocat&align=left');
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 13: Center alignment
+  // Test 15: Center alignment
   await test('Center alignment works', async () => {
     const res = await fetch('/api/profile?username=octocat&align=center');
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 14: Right alignment
+  // Test 16: Right alignment
   await test('Right alignment works', async () => {
     const res = await fetch('/api/profile?username=octocat&align=right');
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
   });
 
-  // Test 15: Cache headers
+  // Test 17: Cache headers
   await test('Cache headers present', async () => {
     const res = await fetch('/api/profile?username=octocat');
     if (!res.headers['cache-control']) {
@@ -149,7 +161,7 @@ async function runTests() {
     }
   });
 
-  // Test 16: Complex query
+  // Test 18: Complex query
   await test('Complex query works', async () => {
     const res = await fetch(
       '/api/profile?username=octocat&theme=dracula&leetcode=false&align=center'
