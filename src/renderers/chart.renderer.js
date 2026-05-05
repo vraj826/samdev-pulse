@@ -42,11 +42,53 @@ function scaleData(data, width, height, padding) {
   }));
 }
 
+function buildYAxisTicks(minVal, maxVal, count = 4) {
+  const range = maxVal - minVal;
+  if (range === 0) {
+    return Array.from({ length: count + 1 }, (_, i) => ({
+      value: minVal,
+      ratio: i / count,
+    }));
+  }
+
+  return Array.from({ length: count + 1 }, (_, i) => {
+    const ratio = i / count;
+    return {
+      value: Math.round(maxVal - ratio * range),
+      ratio,
+    };
+  });
+}
+
+function formatAxisDate(date) {
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 // render a modern line/area chart with glow effects
-export function renderLineChart({ x, y, width, height, data, showArea = true, showLine = true, showDots = false, uniqueId }) {
+export function renderLineChart({
+  x,
+  y,
+  width,
+  height,
+  data,
+  showArea = true,
+  showLine = true,
+  showDots = false,
+  uniqueId,
+  showAxes = false,
+  xLabel = 'Timeline',
+  yLabel = 'Contributions',
+  xTickLabels = [],
+}) {
   const { colors } = getTheme();
   const padding = 12;
   const id = uniqueId || `chart-${x}-${y}`;
+  const maxVal = Math.max(...data);
+  const minVal = Math.min(...data);
 
   const points = scaleData(data, width, height, padding);
   const pathD = smoothPath(points);
@@ -83,6 +125,43 @@ export function renderLineChart({ x, y, width, height, data, showArea = true, sh
     gridLines.push(`<line x1="${padding}" y1="${lineY}" x2="${width - padding}" y2="${lineY}" stroke="${colors.border}" stroke-width="1" opacity="0.3" stroke-dasharray="4 4"/>`);
   }
   elements.push(gridLines.join('\n'));
+
+  if (showAxes) {
+    const leftX = padding;
+    const rightX = width - padding;
+    const topY = padding;
+    const bottomY = height - padding;
+    const yTicks = buildYAxisTicks(minVal, maxVal);
+    const xTicks = xTickLabels.length === 3
+      ? [
+          { ratio: 0, label: xTickLabels[0] },
+          { ratio: 0.5, label: xTickLabels[1] },
+          { ratio: 1, label: xTickLabels[2] },
+        ]
+      : [
+          { ratio: 0, label: 'Start' },
+          { ratio: 0.5, label: 'Mid' },
+          { ratio: 1, label: 'Now' },
+        ];
+
+    elements.push(`<line x1="${leftX}" y1="${bottomY}" x2="${rightX}" y2="${bottomY}" stroke="${colors.borderLight}" stroke-width="1.2" opacity="0.7"/>`);
+    elements.push(`<line x1="${leftX}" y1="${topY}" x2="${leftX}" y2="${bottomY}" stroke="${colors.borderLight}" stroke-width="1.2" opacity="0.7"/>`);
+
+    yTicks.forEach((tick) => {
+      const yPos = topY + tick.ratio * (bottomY - topY);
+      elements.push(`<line x1="${leftX - 4}" y1="${yPos}" x2="${leftX}" y2="${yPos}" stroke="${colors.secondaryText}" stroke-width="1" opacity="0.7"/>`);
+      elements.push(`<text x="${leftX - 8}" y="${yPos + 3}" font-family="'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="8.5" fill="${colors.mutedText}" text-anchor="end">${tick.value}</text>`);
+    });
+
+    xTicks.forEach((tick) => {
+      const xPos = leftX + tick.ratio * (rightX - leftX);
+      elements.push(`<line x1="${xPos}" y1="${bottomY}" x2="${xPos}" y2="${bottomY + 4}" stroke="${colors.secondaryText}" stroke-width="1" opacity="0.7"/>`);
+      elements.push(`<text x="${xPos}" y="${bottomY + 14}" font-family="'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="8.5" fill="${colors.mutedText}" text-anchor="middle">${tick.label}</text>`);
+    });
+
+    elements.push(`<text x="${(leftX + rightX) / 2}" y="${height + 22}" font-family="'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" fill="${colors.secondaryText}" text-anchor="middle">${xLabel}</text>`);
+    elements.push(`<text x="${leftX - 36}" y="${(topY + bottomY) / 2}" font-family="'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" fill="${colors.secondaryText}" text-anchor="middle" transform="rotate(-90, ${leftX - 36}, ${(topY + bottomY) / 2})">${yLabel}</text>`);
+  }
 
   // area fill with gradient
   if (showArea && points.length > 1) {
@@ -132,7 +211,14 @@ export function renderContributionChart({ x, y, width, height, title, data }) {
   const chartX = 0;
   const chartY = 44;
   const chartWidth = width - 40;
-  const chartHeight = height - 64;
+  const chartHeight = height - 90;
+  const totalDays = Math.max(1, data.length);
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setUTCDate(endDate.getUTCDate() - (totalDays - 1));
+  const middleDate = new Date(startDate);
+  middleDate.setUTCDate(startDate.getUTCDate() + Math.floor((totalDays - 1) / 2));
+  const xTickLabels = [formatAxisDate(startDate), formatAxisDate(middleDate), formatAxisDate(endDate)];
 
   return `
   <g>
@@ -156,7 +242,21 @@ export function renderContributionChart({ x, y, width, height, title, data }) {
     
     <!-- chart -->
     <g transform="translate(${x + 20}, ${y})">
-      ${renderLineChart({ x: chartX, y: chartY, width: chartWidth, height: chartHeight, data, showArea: true, showLine: true, showDots: false, uniqueId: 'contrib' })}
+      ${renderLineChart({
+        x: chartX,
+        y: chartY,
+        width: chartWidth,
+        height: chartHeight,
+        data,
+        showArea: true,
+        showLine: true,
+        showDots: false,
+        uniqueId: 'contrib',
+        showAxes: true,
+        xLabel: 'Timeline (last 30 days)',
+        yLabel: 'Contributions',
+        xTickLabels,
+      })}
     </g>
   </g>`;
 }
