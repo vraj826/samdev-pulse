@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
   // log API access
   logApiAccess(req).catch(err => console.error('Log failed:', err.message));
 
-  const { theme, leetcode, align } = req.query;
+  const { theme, leetcode, align, hide_trophies } = req.query;
   const username = req.query.username || DEFAULT_USERNAME;
 
   // theme (default is dark)
@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
   // check if LeetCode is explicitly disabled
   const leetcodeDisabled = leetcode === 'false';
   const shouldRenderLeetCode = Boolean(leetcode && !leetcodeDisabled);
-  const showRepositoryStats = !shouldRenderLeetCode;
+ const hideTrophies = hide_trophies === 'true';
 
   // alignment
   const validAlignments = ['left', 'center', 'right'];
@@ -98,12 +98,15 @@ router.get('/', async (req, res) => {
   const row2CardWidth = calculateCardWidth(2) - LAYOUT.cardGap / 2;
   const row2Height = 200;
 
-  // Row 3: trophy row
-  const row3Y = row2Y + row2Height + LAYOUT.cardGap;
-  const row3Height = 165;
-  const fullWidth = width - (LAYOUT.padding * 2);
-  const height = row3Y + row3Height + LAYOUT.padding;
+ // Row 3: trophy row
+const row3Y = row2Y + row2Height + LAYOUT.cardGap;
+const row3Height = 165;
+const fullWidth = width - (LAYOUT.padding * 2);
 
+// Dynamic height
+const height = hideTrophies
+  ? row2Y + row2Height + LAYOUT.padding
+  : row3Y + row3Height + LAYOUT.padding;
   // Card 1: github activity
   const card1Title = 'GitHub Activity';
   const card1Stats = [
@@ -211,7 +214,14 @@ router.get('/', async (req, res) => {
     renderDonutChart({ x: LAYOUT.padding + chartWidth + LAYOUT.cardGap, y: row2Y, width: row2CardWidth, height: row2Height, title: 'Top Languages', data: topLanguages }),
 
     // Row 3: trophy row
-    renderTrophyRow({ x: LAYOUT.padding, y: row3Y, width: fullWidth, height: row3Height, data: trophyData }),
+    !hideTrophies &&
+renderTrophyRow({
+  x: LAYOUT.padding,
+  y: row3Y,
+  width: fullWidth,
+  height: row3Height,
+  data: trophyData
+}),
   ].join('\n');
 
   const svg = wrapSvg(content, width, height);
