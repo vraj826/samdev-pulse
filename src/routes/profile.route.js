@@ -59,7 +59,8 @@ router.get('/', async (req, res) => {
 
   // Sanitize and validate username before passing to GitHub API
   // GitHub usernames: max 39 chars, alphanumeric and hyphens only, no leading/trailing hyphens
-  const rawUsername = req.query.username || '';
+  // Ensure it's a string (prevents Express array query parameter trickery)
+  const rawUsername = typeof req.query.username === 'string' ? req.query.username : '';
   const usernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$|^[a-zA-Z0-9]$/;
 
   let username;
