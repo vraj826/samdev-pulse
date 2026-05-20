@@ -952,8 +952,33 @@ section {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
+  padding-bottom: 1.25rem; /* Ensure enough bottom padding so scrollbar doesn't overlap text */
   font-size: 0.8125rem;
   word-break: break-all;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) var(--bg-primary);
+}
+
+.usage-card .code-block::-webkit-scrollbar {
+  height: 6px;
+}
+
+.usage-card .code-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.usage-card .code-block::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-base);
+}
+
+.usage-card:hover .code-block::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+}
+
+.usage-card:hover .code-block::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-purple);
 }
 
 .params-table {
