@@ -11,7 +11,7 @@
   const alignSelect = document.getElementById('align-select');
   const previewImg = document.getElementById('preview-img');
   const snippet = document.getElementById('snippet');
-  const copyBtn = document.getElementById('copy-btn');
+  const copyButtons = document.querySelectorAll('.copy-btn');
   const updateBtn = document.getElementById('update-preview-btn');
   const downloadBtn = document.getElementById('download-png-btn');
   const hideTrophiesCheck = document.getElementById('hide-trophies');
@@ -129,6 +129,7 @@
     Download PNG
   `;
 
+
   /* Handles png download */
   async function handleDownloadPng() {
   if (!previewImg || !previewImg.src) {
@@ -213,29 +214,30 @@
     alert('Failed to generate PNG');
   }
 }
-  async function handleCopyClick() {
-    if (!copyBtn || !snippet) return;
+  /* Handles copy button click */
+  // async function handleCopyClick() {
+  //   if (!copyBtn || !snippet) return;
 
-    try {
-      await navigator.clipboard.writeText(snippet.textContent);
-      copyBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        Copied!
-      `;
-      setTimeout(() => {
-        copyBtn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          Copy
-        `;
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  }
+  //   try {
+  //     await navigator.clipboard.writeText(snippet.textContent);
+  //     copyBtn.innerHTML = `
+  //       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  //         <polyline points="20 6 9 17 4 12"/>
+  //       </svg>
+  //       Copied!
+  //     `;
+  //     setTimeout(() => {
+  //       copyBtn.innerHTML = `
+  //         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  //           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  //         </svg>
+  //         Copy
+  //       `;
+  //     }, 2000);
+  //   } catch (err) {
+  //     console.error('Failed to copy:', err);
+  //   }
+  // }
 
   /* Sets up smooth scrolling for anchor links */
   function setupSmoothScrolling() {
@@ -296,9 +298,62 @@
   downloadBtn.addEventListener('click', handleDownloadPng);
 }
 
-    if (copyBtn) {
-      copyBtn.addEventListener('click', handleCopyClick);
-    }
+
+  copyButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+
+      const wrapper =
+        button.closest('.code-wrapper, .code-section');
+
+      const snippet = wrapper.querySelector('code');
+
+      if (!snippet) return;
+
+      try {
+        await navigator.clipboard.writeText(
+          snippet.textContent
+        );
+
+  
+      const originalHTML = button.innerHTML;
+
+      const hasCopyText =
+        button.textContent.trim().toLowerCase().includes('copy');
+
+      if (hasCopyText) {
+        button.innerHTML = `
+          <svg width="16" height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Copied
+        `;
+      } else {
+        button.innerHTML = `
+          <svg width="16" height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        `;
+      }
+
+      setTimeout(() => {
+        button.innerHTML = originalHTML;
+      }, 2000);
+
+
+
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+  });
 
     setupSmoothScrolling();
 
