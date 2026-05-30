@@ -35,7 +35,7 @@ describe('query-validation.js', () => {
     expect(normalizeGitHubUsername('a'.repeat(39), 'SamXop123')).toEqual({ username: 'a'.repeat(39), isValid: true });
 
     // Empty values use fallback default
-    expect(normalizeGitHubUsername('', 'SamXop123')).toEqual({ username: 'SamXop123', isValid: true });
+    expect(normalizeGitHubUsername('', 'SamXop123')).toEqual({ username: '', isValid: false });
 
     // Invalid usernames
     expect(normalizeGitHubUsername('bad/name', 'SamXop123')).toEqual({ username: 'bad/name', isValid: false });
@@ -79,6 +79,16 @@ describe('query-validation.js', () => {
       codechef: 'chef-user',
       shouldRenderLeetCode: false,
     });
+  });
+
+  test('normalizeProfileQuery rejects missing username', () => {
+    const result = normalizeProfileQuery(
+      {},
+      { defaultUsername: 'SamXop123' }
+    );
+
+    expect(result.isUsernameValid).toBe(false);
+    expect(result.username).toBe('');
   });
 
   test('normalizeProfileQuery rejects invalid platform handles securely', () => {

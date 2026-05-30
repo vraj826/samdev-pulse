@@ -40,9 +40,8 @@ export function normalizeAlign(value) {
 export function normalizeGitHubUsername(value, defaultUsername) {
   const username = normalizeString(value);
   if (!username) {
-    return { username: defaultUsername, isValid: true };
-  }
-
+  return { username: '', isValid: false };
+ }
   return {
     username,
     isValid: GITHUB_USERNAME_REGEX.test(username),
