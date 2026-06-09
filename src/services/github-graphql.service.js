@@ -1,6 +1,7 @@
 // GitHub GraphQL API Service - Contribution Calendar & Streaks
 
 import { githubCache } from "../utils/cache.js";
+import { HttpErrorCode, httpRequest } from "../utils/http-client.js";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 
@@ -54,49 +55,41 @@ async function fetchContributionData(username) {
     throw new Error("GITHUB_TOKEN required for contribution data");
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const response = await httpRequest(GITHUB_GRAPHQL_URL, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({
+      query: CONTRIBUTION_QUERY,
+      variables: { username },
+    }),
+  });
 
-  try {
-    const response = await fetch(GITHUB_GRAPHQL_URL, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        query: CONTRIBUTION_QUERY,
-        variables: { username },
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    // handles rate limits silently
-    const rateLimitRemaining = response.headers.get("x-ratelimit-remaining");
-    if (rateLimitRemaining && parseInt(rateLimitRemaining, 10) < 10) {
-      // rate limit warning suppressed for production
-    }
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new Error("GitHub API rate limit exceeded");
-      }
-      throw new Error(`GitHub GraphQL API error: ${response.status}`);
-    }
-
-    const json = await response.json();
-
-    if (json.errors) {
-      throw new Error(json.errors[0]?.message || "GraphQL query failed");
-    }
-
-    return json.data?.user;
-  } catch (error) {
-    clearTimeout(timeout);
-    if (error.name === "AbortError") {
+  if (!response.success) {
+    if (response.error?.code === HttpErrorCode.TIMEOUT) {
       throw new Error("GitHub GraphQL API timeout");
     }
-    throw error;
+    if (response.error?.code === HttpErrorCode.INVALID_JSON) {
+      throw new Error("GitHub GraphQL API returned invalid JSON");
+    }
+    if (response.status === 403 || response.status === 429) {
+      throw new Error("GitHub API rate limit exceeded");
+    }
+    throw new Error(`GitHub GraphQL API error: ${response.status || 0}`);
   }
+
+  // handles rate limits silently
+  const rateLimitRemaining = response.headers?.get("x-ratelimit-remaining");
+  if (rateLimitRemaining && parseInt(rateLimitRemaining, 10) < 10) {
+    // rate limit warning suppressed for production
+  }
+
+  const json = response.data;
+
+  if (json.errors) {
+    throw new Error(json.errors[0]?.message || "GraphQL query failed");
+  }
+
+  return json.data?.user;
 }
 
 /* flatten contribution calendar weeks into a sorted array of days */
