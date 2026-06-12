@@ -678,12 +678,16 @@
       return nameClone.textContent.trim();
     }).filter(Boolean);
 
+    let activeSuggestionIndex = -1;
+
     function hideSuggestions() {
-      if (!suggestionsBox) return;
+      if (!suggestionsBox || !suggestionsBox.classList.contains('visible')) return;
 
       suggestionsBox.innerHTML = '';
       suggestionsBox.classList.remove('visible');
       searchInput.setAttribute('aria-expanded', 'false');
+      searchInput.removeAttribute('aria-activedescendant');
+      activeSuggestionIndex = -1;
     }
 
     function selectSuggestion(themeName) {
@@ -713,9 +717,13 @@
       }
 
       suggestionsBox.innerHTML = '';
-      matches.forEach(name => {
+      activeSuggestionIndex = -1;
+      searchInput.removeAttribute('aria-activedescendant');
+
+      matches.forEach((name, index) => {
         const item = document.createElement('button');
         item.type = 'button';
+        item.id = `theme-suggestion-${index}`;
         item.className = 'theme-search-suggestion';
         item.setAttribute('role', 'option');
         item.textContent = name;
@@ -725,6 +733,18 @@
 
       suggestionsBox.classList.add('visible');
       searchInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function highlightSuggestion(suggestions) {
+      suggestions.forEach((item, index) => {
+        if (index === activeSuggestionIndex) {
+          item.classList.add('highlighted');
+          searchInput.setAttribute('aria-activedescendant', item.id);
+          item.scrollIntoView({ block: 'nearest' });
+        } else {
+          item.classList.remove('highlighted');
+        }
+      });
     }
 
     // ── Core filter function ──
@@ -814,9 +834,32 @@
 
     searchInput.addEventListener('focus', updateSuggestions);
 
+    searchInput.addEventListener('keydown', e => {
+      const suggestions = suggestionsBox.querySelectorAll('.theme-search-suggestion');
+      if (!suggestions.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSuggestionIndex = (activeSuggestionIndex + 1) % suggestions.length;
+        highlightSuggestion(suggestions);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSuggestionIndex = (activeSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+        highlightSuggestion(suggestions);
+      } else if (e.key === 'Enter') {
+        if (activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestions.length) {
+          e.preventDefault();
+          selectSuggestion(suggestions[activeSuggestionIndex].textContent);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideSuggestions();
+      }
+    });
+
     // Close autocomplete when the user clicks away from the search area.
     document.addEventListener('click', e => {
-      if (!searchInput.parentElement.contains(e.target)) {
+      if (suggestionsBox.classList.contains('visible') && !searchInput.parentElement.contains(e.target)) {
         hideSuggestions();
       }
     });
